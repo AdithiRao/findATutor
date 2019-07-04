@@ -14,18 +14,24 @@
 // var payload = "https://tough-jellyfish-78.localtunnel.me/webhook";
 
 // configuration for firebase connection
-const functions = require('firebase-functions');
+var firebase = require("firebase/app");
+require("firebase/auth");
+require("firebase/firestore");
+require('firebase/database');
+
 var firebaseConfig = {
-  apiKey: "AIzaSyB2_-jQ9ANYO9C4hpTyQ11yNS3LZil5Jtg",
+    apiKey: "AIzaSyB2_-jQ9ANYO9C4hpTyQ11yNS3LZil5Jtg",
     authDomain: "findatutor-9f0dd.firebaseapp.com",
     databaseURL: "https://findatutor-9f0dd.firebaseio.com",
     projectId: "findatutor-9f0dd",
-    storageBucket: "",
+    storageBucket: "findatutor-9f0dd.appspot.com",
     messagingSenderId: "694252738440",
     appId: "1:694252738440:web:414ffc2d3f009b9f"
-};
-
+  };
+  // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
+process.env.DEBUG = 'dialogflow:debug';
+
 var database = firebase.database();
 
 // const admin = require('firebase-admin');

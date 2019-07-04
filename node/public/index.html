@@ -1,4 +1,4 @@
-<!-- 
+<!--
 
 Copyright 2016-present, Facebook, Inc.
 All rights reserved.
@@ -29,17 +29,19 @@ LICENSE file in the root directory of this source tree.
          fjs.parentNode.insertBefore(js, fjs);
        }(document, 'script', 'facebook-jssdk'));
     </script>
+    <script src="https://www.gstatic.com/firebasejs/3.1.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/3.1.0/firebase-database.js"></script>
 
     <h1>Messenger Demo</h1>
 
     <div>
       <p>The "Send to Messenger" plugin will trigger an authentication callback to your webhook.</p>
 
-      <div class="fb-send-to-messenger" 
+      <div class="fb-send-to-messenger"
         messenger_app_id='APP_ID'
         page_id='PAGE_ID'
-        data-ref="PASS_THROUGH_PARAM" 
-        color="blue" 
+        data-ref="PASS_THROUGH_PARAM"
+        color="blue"
         size="standard">
       </div>
     </div>
@@ -47,7 +49,7 @@ LICENSE file in the root directory of this source tree.
     <div>
       <p>The "Message Us" plugin takes the user directly to Messenger and into a thread with your Page.</p>
 
-      <div class="fb-messengermessageus" 
+      <div class="fb-messengermessageus"
         messenger_app_id='APP_ID'
         page_id='PAGE_ID'
         color="blue"
