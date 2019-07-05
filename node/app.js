@@ -1,25 +1,13 @@
-/*
- * Copyright 2016-present, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
 /* jshint node: true, devel: true */
 'use strict';
 
-// payload;
-// var payload = "https://tough-jellyfish-78.localtunnel.me/webhook";
-
 // configuration for firebase connection
-var firebase = require("firebase/app");
+const firebase = require("firebase/app");
 require("firebase/auth");
 require("firebase/firestore");
 require('firebase/database');
 
-var firebaseConfig = {
+const firebaseConfig = {
     apiKey: "AIzaSyB2_-jQ9ANYO9C4hpTyQ11yNS3LZil5Jtg",
     authDomain: "findatutor-9f0dd.firebaseapp.com",
     databaseURL: "https://findatutor-9f0dd.firebaseio.com",
@@ -28,14 +16,12 @@ var firebaseConfig = {
     messagingSenderId: "694252738440",
     appId: "1:694252738440:web:414ffc2d3f009b9f"
   };
-  // Initialize Firebase
+
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 process.env.DEBUG = 'dialogflow:debug';
 
-var database = firebase.database();
-
-// const admin = require('firebase-admin');
-// admin.initializeApp();
+const database = firebase.database();
 
 
 const
@@ -246,9 +232,11 @@ function receivedAuthentication(event) {
 lattitude;
 longitude;
 role;
+college;
 var lattitude = null;
 var longitude = null;
 var role = null;
+var college = null;
 function receivedMessage(event) {
   var senderID = event.sender.id;
   var recipientID = event.recipient.id;
@@ -278,35 +266,30 @@ function receivedMessage(event) {
     var quickReplyPayload = quickReply.payload;
     console.log("Quick reply for message %s with payload %s",
       messageId, quickReplyPayload);
-    switch (quickReplyPayload){
-      case 'tutor':
-        if (lattitude != null){
-          role = 'Tutor';
-          console.log('tutor received');
-        }else{
-          sendTextMessage(senderID, "Sorry, we didn't quite get that");
+    if (quickReplyPayload.startsWith('college.')){
+        college = quickReplyPayload.slice(7);
+        console.log('college processed: ' + college);
+        processRole(senderID);
+        return;
+      }else{
+        switch (quickReplyPayload){
+          case 'role.tutor':
+            role = 'Tutor';
+            console.log('tutor received');
+            break;
+          case 'role.student':
+            role = 'Student';
+            console.log('student received');
+            break;
+          case 'role.both':
+            role = 'Both';
+            console.log('both received');
+            break;
         }
-        break;
-      case 'student':
-        if(lattitude != null){
-          role = 'Student';
-          console.log('student received');
-        }else{
-          sendTextMessage(senderID, "Sorry, we didn't quite get that");
-        }
-        break;
-      case 'both student and tutor':
-        if (lattitude != null){
-          role = 'Both';
-          console.log('both received');
-        }else{
-          sendTextMessage(senderID, "Sorry, we didn't quite get that");
-        }
-        break;
+        connectWithOthers(senderID);
+        return;
+      }
     }
-    connectWithOthers(senderID);
-    return;
-  }
 
   if (messageText) {
     console.log(messageText);
@@ -325,7 +308,7 @@ function receivedMessage(event) {
         break;
 
       case 'change role':
-        processLocation(senderID, null, null);
+        processLocation(senderID);
         break;
 
       case 'gif':
@@ -376,44 +359,51 @@ function receivedMessage(event) {
         requiresServerURL(sendAccountLinking, [senderID]);
         break;
 
+      case 'reset':
+        databaseReset();
+        break;
+      // case 'remove':
+      //   collegeFinder();
+      //   break;
+
       default:
         sendTextMessage(senderID, messageText);
     }
   } else if (messageAttachments) {
     // sendTextMessage(senderID, "Your location has been received. Now tell us, are you a student, teacher, or both? Note that you can change this option at any time by typing 'change role'");
-    processLocation(senderID, messageAttachments[0].payload.coordinates.lat, messageAttachments[0].payload.coordinates.long);
+    collegeFinder(senderID, messageAttachments[0].payload.coordinates.lat, messageAttachments[0].payload.coordinates.long);
 
   }
 }
 
+function databaseReset(){
+  database.ref('users/Adithi').remove();
+  // database.ref('users/Adithi').set({job:'professor', pet: 'cat'});
+}
 
-function processLocation(recipientId, lat, long) {
-  // send location to database along with name and answer to what their pos is
-  if (lat != null){
-    lattitude = lat
-    longitude = long
-  }
+
+function processRole(recipientId) {
   var messageData = {
     recipient: {
       id: recipientId
     },
     message: {
-      text: "Your location has been received. Now tell us, are you a student, teacher, or both? Note that you can change this option at any time by typing 'change role'",
+      text: "Now tell us, are you a student, teacher, or both? Note that you can change this option at any time by typing 'change role'",
       quick_replies: [
         {
           "content_type":"text",
           "title":"Student",
-          "payload":"student"
+          "payload":"role.student"
         },
         {
           "content_type":"text",
           "title":"Tutor",
-          "payload":"tutor"
+          "payload":"role.tutor"
         },
         {
           "content_type":"text",
           "title":"Both",
-          "payload":"both student and tutor"
+          "payload":"role.both"
         }
       ]
     }
@@ -421,35 +411,84 @@ function processLocation(recipientId, lat, long) {
 
   callSendAPI(messageData);
 }
-//     message: {
-//       attachment: {
-//         type: "template",
-//         payload: {
-//           template_type: "button",
-//           text: "Your location has been received. Now tell us, are you a student, teacher, or both? Note that you can change this option at any time by typing 'change role'",
-//           buttons:[{
-//             type: "postback",
-//             payload: "DEVELOPER_DEFINED_PAYLOAD",
-//             title: "Student"
-//           }, {
-//             type: "postback",
-//             title: "Tutor",
-//             payload: "DEVELOPER_DEFINED_PAYLOAD"
-//           }, {
-//             type: "postback",
-//             title: "Both student and tutor",
-//             payload: "DEVELOPER_DEFINED_PAYLOAD"
-//           }]
-//         }
-//       }
-//     }
-//   };
-//   callSendAPI(messageData);
-//
-// }
+
+function collegeFinder(recipientId, lat, long) {
+
+    lattitude = lat;
+    longitude = long;
+
+    var mapsAPI = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=';
+    var midLink = lat + ',' + long;
+    var restOfLink = '&radius=3000&type=university&key=AIzaSyBJyBXUV5wnqpZSNCWSr8FJONw7TypRIcQ';
+    var fullLink = mapsAPI + midLink + restOfLink;
+
+    https.get(fullLink, (resp)=> {
+      let data='';
+
+      resp.on('data', (chunk)=> {
+        data += chunk;
+      });
+
+      resp.on('end', () => {
+        var jsonList = JSON.parse(data).results;
+        var replyButtons = [];
+        var numButtons = jsonList.length;
+        if(jsonList.length > 13){
+          numButtons = 13;
+        }
+        for(var i = 0; i< numButtons; i++){
+          replyButtons.push({
+            "content_type":"text",
+            "title":jsonList[i].name,
+            "payload": "college." + jsonList[i].name
+          });
+        }
+        var messageData = {
+          recipient: {
+            id: recipientId
+          },
+          message: {
+            text: "Your location has been received. Which of the following colleges do you attend?",
+            quick_replies: replyButtons
+          }
+        };
+
+        callSendAPI(messageData);
+      });
+
+    }).on('error', (err)=> {
+      console.log("Error: " + err.message);
+    });
+
+}
+
 
 function connectWithOthers(senderID){
+  var link = "https://graph.facebook.com/" + senderID  + "?fields=first_name,last_name,profile_pic&access_token=" + PAGE_ACCESS_TOKEN;
+  https.get(link, (resp)=> {
+    let data='';
 
+    resp.on('data', (chunk)=> {
+      data += chunk;
+    });
+
+    resp.on('end', () => {
+      var firstname = JSON.parse(data).first_name;
+      var lastname = JSON.parse(data).last_name;
+      console.log(JSON.parse(data).id);
+      database.ref('users/' + senderID).set({
+        lat: lattitude,
+        long: longitude,
+        role: role,
+        college: college,
+        rating: null,
+        first: firstname,
+        last: lastname
+      });
+    }).on('error', (err)=> {
+    console.log("Error: " + err.message);
+    });
+  });
 }
 
 
